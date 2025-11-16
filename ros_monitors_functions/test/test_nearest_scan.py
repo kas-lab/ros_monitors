@@ -15,9 +15,13 @@ import logging
 import math
 
 from builtin_interfaces.msg import Time
+
 from geometry_msgs.msg import TransformStamped
+
 import pytest
+
 from ros_monitors_functions.laser_scan_functions import get_nearest_scan_distance_in_base
+
 from sensor_msgs.msg import LaserScan
 
 

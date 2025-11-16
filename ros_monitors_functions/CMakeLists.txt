@@ -19,6 +19,11 @@ if(BUILD_TESTING)
     nearest_scan_tests
     test/test_nearest_scan.py
   )
+
+  ament_add_pytest_test(
+    test_odom_functions
+    test/test_odom_functions.py
+  )
 endif()
 
 ament_python_install_package(${PROJECT_NAME})

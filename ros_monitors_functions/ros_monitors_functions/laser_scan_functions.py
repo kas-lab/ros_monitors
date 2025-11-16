@@ -16,9 +16,11 @@ import math
 import numpy as np
 
 from rclpy.duration import Duration
+
 from ros_monitors_functions.utils import _get_tf_buffer_for_node
 from ros_monitors_functions.utils import _parse_bool
 from ros_monitors_functions.utils import _parse_float
+
 from sensor_msgs.msg import LaserScan
 
 import tf_transformations  # provides quaternion_matrix()
