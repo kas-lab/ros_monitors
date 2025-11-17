@@ -13,10 +13,11 @@
 # limitations under the License.
 import math
 from collections import deque
-
+from ros_monitors_functions.utils import register_monitor
 from nav_msgs.msg import Odometry
 
 
+@register_monitor("calc_linear_velocity")
 def calc_linear_velocity(_, odom_msg: Odometry) -> float:
     # if linear x is super small, replace with 0.0
     if odom_msg.twist.twist.linear.x < 0.001:
@@ -27,6 +28,7 @@ def calc_linear_velocity(_, odom_msg: Odometry) -> float:
                       abs(odom_msg.twist.twist.linear.y))
 
 
+@register_monitor("MeanLinearVelocity")
 class MeanLinearVelocity:
     """
     Callable monitor that maintains a rolling mean linear speed over a time window.

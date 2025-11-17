@@ -38,3 +38,13 @@ def _get_tf_buffer_for_node(node) -> tf2_ros.Buffer:
         node._nearestscan_tf_listener = tf2_ros.TransformListener(
             node._nearestscan_tf_buffer, node, spin_thread=True)
     return node._nearestscan_tf_buffer
+
+
+monitor_registry = {}
+
+
+def register_monitor(name):
+    def decorator(func):
+        monitor_registry[name] = func
+        return func
+    return decorator
