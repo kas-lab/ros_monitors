@@ -1,5 +1,6 @@
 from collections import UserDict
 from .utils import monitor_registry
+from .monitor_functions import *
 from .odom_functions import *
 from .laser_scan_functions import *
 
