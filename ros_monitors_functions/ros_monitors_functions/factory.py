@@ -1,8 +1,9 @@
 from collections import UserDict
 from .utils import monitor_registry
-from .monitor_functions import *
 from .odom_functions import *
 from .laser_scan_functions import *
+from .monitor_functions import *
+
 
 class MonitorFactory(UserDict):
     def register_monitor(self, key, monitor_callable):

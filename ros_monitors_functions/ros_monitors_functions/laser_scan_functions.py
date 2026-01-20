@@ -26,6 +26,26 @@ from sensor_msgs.msg import LaserScan
 import tf_transformations  # provides quaternion_matrix()
 
 
+@register_monitor("get_nearest_laser_scan_ratio")
+def get_nearest_laser_scan_ratio(_, msg):
+    laser_min = msg.range_min
+    laser_max = msg.range_max
+
+    # Initialize nearest_object to a value greater than laser_max
+    nearest_object = laser_max * 2
+
+    # mirte sees itself with its laser, so we need to make sure that the min is not too small.
+    laser_min = 0.28
+    # Iterate through the laser ranges to find the nearest object
+    for laser_dist in msg.ranges:
+        if laser_min < laser_dist < laser_max:
+            nearest_object = min(nearest_object, laser_dist)
+
+    # Normalize the nearest object distance
+    _fitted_nearest = (nearest_object - laser_min) / (laser_max - laser_min)
+    return _fitted_nearest
+
+
 @register_monitor("get_nearest_laser_scan_distance")
 def get_nearest_laser_scan_distance(_, msg):
     return min(

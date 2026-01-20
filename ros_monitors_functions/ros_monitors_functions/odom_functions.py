@@ -18,11 +18,11 @@ from nav_msgs.msg import Odometry
 
 
 @register_monitor("calc_linear_velocity")
-def calc_linear_velocity(_, odom_msg: Odometry) -> float:
+def calc_linear_velocity(_, odom_msg: Odometry, tolerance=0.09) -> float:
     # if linear x is super small, replace with 0.0
-    if odom_msg.twist.twist.linear.x < 0.001:
+    if odom_msg.twist.twist.linear.x < tolerance:
         odom_msg.twist.twist.linear.x = 0.0
-    if odom_msg.twist.twist.linear.y < 0.001:
+    if odom_msg.twist.twist.linear.y < tolerance:
         odom_msg.twist.twist.linear.y = 0.0
     return math.hypot(abs(odom_msg.twist.twist.linear.x),
                       abs(odom_msg.twist.twist.linear.y))
