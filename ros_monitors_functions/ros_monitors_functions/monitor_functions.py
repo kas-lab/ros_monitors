@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def get_data_field(_, msg, field=''):
+from ros_monitors_functions.utils import register_monitor
+
+
+@register_monitor("get_data_field")
+def get_data_field(_, msg, field='data'):
     if field == '':
-        return getattr(msg, 'data')
+        return getattr(msg, field)
     return getattr(msg, field)
