@@ -16,8 +16,13 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   ament_add_pytest_test(
-    nearest_scan_tests
+    test_nearest_scan
     test/test_nearest_scan.py
+  )
+
+  ament_add_pytest_test(
+    test_monitor_functions
+    test/test_monitor_functions.py
   )
 
   # ament_add_pytest_test(
