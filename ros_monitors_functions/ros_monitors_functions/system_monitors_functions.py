@@ -45,6 +45,7 @@ class AverageCPULoad:
         return avg_load
 
 
+@register_monitor("AverageCPULoad1min")
 class AverageCPULoad1min(AverageCPULoad):
     """
     TODO
