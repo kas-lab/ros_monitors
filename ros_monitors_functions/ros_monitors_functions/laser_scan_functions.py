@@ -11,30 +11,65 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Monitors that calculate obstacle distances from ROS laser scans."""
+
 import math
 
 import numpy as np
 
 from rclpy.duration import Duration
+from rclpy.node import Node
 
 from ros_monitors_functions.utils import _get_tf_buffer_for_node
 from ros_monitors_functions.utils import _parse_bool
 from ros_monitors_functions.utils import _parse_float
 from ros_monitors_functions.utils import register_monitor
+
 from sensor_msgs.msg import LaserScan
 
-import tf_transformations  # provides quaternion_matrix()
+import tf_transformations
 
 
-@register_monitor("get_nearest_laser_scan_ratio")
-def get_nearest_laser_scan_ratio(_, msg):
+@register_monitor('get_nearest_laser_scan_ratio')
+def get_nearest_laser_scan_ratio(
+    _node: Node | None,
+    msg: LaserScan,
+) -> float:
+    """
+    Return the normalized distance to the nearest valid laser hit.
+
+    Readings at or below 0.28 meters are ignored to avoid detecting the robot
+    body. The result is normalized between that lower bound and the sensor's
+    maximum range.
+
+    Parameters
+    ----------
+    _node : Node or None
+        ROS node supplied by the monitor interface; unused by this monitor.
+    msg : LaserScan
+        Laser scan containing range limits and distance readings.
+
+    Returns
+    -------
+    float
+        Normalized nearest-hit distance. Values greater than ``1.0`` indicate
+        that no valid hit was found.
+
+    Examples
+    --------
+    >>> scan = LaserScan(range_min=0.1, range_max=10.0)
+    >>> scan.ranges = [0.2, 5.14, float('inf')]
+    >>> get_nearest_laser_scan_ratio(None, scan)
+    0.5
+
+    """
     laser_min = msg.range_min
     laser_max = msg.range_max
 
     # Initialize nearest_object to a value greater than laser_max
     nearest_object = laser_max * 2
 
-    # mirte sees itself with its laser, so we need to make sure that the min is not too small.
+    # MIRTE sees its own body, so enforce a suitable minimum distance.
     laser_min = 0.28
     # Iterate through the laser ranges to find the nearest object
     for laser_dist in msg.ranges:
@@ -46,36 +81,75 @@ def get_nearest_laser_scan_ratio(_, msg):
     return _fitted_nearest
 
 
-@register_monitor("get_nearest_laser_scan_distance")
-def get_nearest_laser_scan_distance(_, msg):
+@register_monitor('get_nearest_laser_scan_distance')
+def get_nearest_laser_scan_distance(
+    _node: Node | None,
+    msg: LaserScan,
+) -> float:
+    """
+    Return the nearest finite laser range.
+
+    Parameters
+    ----------
+    _node : Node or None
+        ROS node supplied by the monitor interface; unused by this monitor.
+    msg : LaserScan
+        Laser scan whose range readings are inspected.
+
+    Returns
+    -------
+    float
+        Smallest finite reading, or positive infinity when none exists.
+
+    Examples
+    --------
+    >>> scan = LaserScan()
+    >>> scan.ranges = [float('inf'), 2.5, 1.0]
+    >>> get_nearest_laser_scan_distance(None, scan)
+    1.0
+
+    """
     return min(
         (r for r in msg.ranges if not math.isinf(r) and not math.isnan(r)),
         default=float('inf')
     )
 
 
-@register_monitor("get_nearest_scan_distance_in_base")
+@register_monitor('get_nearest_scan_distance_in_base')
 def get_nearest_scan_distance_in_base(
-    node,
+    node: Node,
     scan: LaserScan,
     target_frame: str = 'base_link',
     timeout_sec: str = '0.1',
     planar: str = 'True',
 ) -> float:
     """
-    Compute the nearest valid LaserScan hit distance measured in`target_frame`.
+    Compute the nearest valid scan distance in a target frame.
 
-    Args:
-        node: rclpy Node that owns the TF buffer.
-        scan: LaserScan message.
-        target_frame: target frame name (e.g., 'base_link').
-        timeout_sec: TF lookup timeout, as string (e.g., '0.1').
-        planar: 'True'/'False' as string. If True -> sqrt(x^2+y^2); else 3D distance.
+    Parameters
+    ----------
+    node : Node
+        ROS node that owns the cached TF buffer and provides logging.
+    scan : LaserScan
+        Scan containing ranges and source-frame metadata.
+    target_frame : str, optional
+        Frame in which distances are measured.
+    timeout_sec : str, optional
+        TF lookup timeout in seconds.
+    planar : str, optional
+        Textual boolean selecting planar distance when true or 3D distance
+        when false.
 
     Returns
     -------
-        Nearest distance in meters (float('inf') if no valid reading or TF unavailable).
-    ---
+    float
+        Nearest distance in meters, or positive infinity when no valid reading
+        or transform is available.
+
+    Examples
+    --------
+    Use ``get_nearest_scan_distance_in_base(node, scan)`` to measure valid
+    scan endpoints after transforming them into ``base_link``.
 
     """
     # Parse string args
@@ -90,9 +164,9 @@ def get_nearest_scan_distance_in_base(
             target_frame if target_frame != '' else 'base_link',
             scan.header.frame_id,
             scan.header.stamp,
-            Duration(seconds=timeout_f),
+            Duration(nanoseconds=int(timeout_f * 1_000_000_000)),
         ).transform
-    except Exception as ex:
+    except Exception as ex:  # noqa: B902  TF backends raise varied exceptions.
         node.get_logger().warn(f'TF lookup failed: {ex}')
         return float('inf')
 

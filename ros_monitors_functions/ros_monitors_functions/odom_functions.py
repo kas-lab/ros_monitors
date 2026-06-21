@@ -11,14 +11,53 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import math
+"""Monitors that calculate instantaneous and rolling odometry metrics."""
+
 from collections import deque
-from ros_monitors_functions.utils import register_monitor
+import math
+
 from nav_msgs.msg import Odometry
 
+from rclpy.node import Node
 
-@register_monitor("calc_linear_velocity")
-def calc_linear_velocity(_, odom_msg: Odometry, tolerance=0.09) -> float:
+from ros_monitors_functions.utils import register_monitor
+
+
+@register_monitor('calc_linear_velocity')
+def calc_linear_velocity(
+    _node: Node | None,
+    odom_msg: Odometry,
+    tolerance: float = 0.09,
+) -> float:
+    """
+    Calculate planar linear speed from an odometry message.
+
+    Components below ``tolerance`` are set to zero on the supplied message
+    before the Euclidean speed is calculated.
+
+    Parameters
+    ----------
+    _node : Node or None
+        ROS node supplied by the monitor interface; unused by this monitor.
+    odom_msg : Odometry
+        Message containing the X and Y linear velocity components.
+    tolerance : float, optional
+        Component values below this threshold are treated as zero.
+
+    Returns
+    -------
+    float
+        Magnitude of the filtered planar linear velocity.
+
+    Examples
+    --------
+    >>> odometry = Odometry()
+    >>> odometry.twist.twist.linear.x = 3.0
+    >>> odometry.twist.twist.linear.y = 4.0
+    >>> calc_linear_velocity(None, odometry)
+    5.0
+
+    """
     # if linear x is super small, replace with 0.0
     if odom_msg.twist.twist.linear.x < tolerance:
         odom_msg.twist.twist.linear.x = 0.0
@@ -28,29 +67,75 @@ def calc_linear_velocity(_, odom_msg: Odometry, tolerance=0.09) -> float:
                       abs(odom_msg.twist.twist.linear.y))
 
 
-@register_monitor("MeanLinearVelocity")
+@register_monitor('MeanLinearVelocity')
 class MeanLinearVelocity:
     """
-    Callable monitor that maintains a rolling mean linear speed over a time window.
+    Maintain a rolling mean linear speed over a time window.
 
-    Example:
-    -------
-        mean_vel = MeanLinearVelocity(window_seconds=5.0)
-        node.create_subscription(Odometry, 'odom', mean_vel, qos_profile)
+    Samples are timestamped using the odometry message header. Values older
+    than the configured window are removed before the mean is returned.
+
+    Examples
+    --------
+    >>> monitor = MeanLinearVelocity(window_seconds=5.0)
+    >>> odometry = Odometry()
+    >>> odometry.twist.twist.linear.x = 2.0
+    >>> monitor(None, odometry)
+    2.0
 
     """
 
-    def __init__(self, window_seconds: float = 5.0, threshold: float = 0.001):
+    def __init__(
+        self,
+        window_seconds: float = 5.0,
+        threshold: float = 0.001,
+    ) -> None:
+        """
+        Initialize the rolling mean monitor.
+
+        Parameters
+        ----------
+        window_seconds : float, optional
+            Duration of the rolling window in seconds.
+        threshold : float, optional
+            Absolute component values below this threshold are treated as zero.
+
+        Returns
+        -------
+        None
+            The constructor initializes an empty sample window.
+
+        """
         self.window_seconds = float(window_seconds)
         self.threshold = threshold
-        self._samples = deque()  # holds (timestamp_sec, speed)
-        self._running_sum = 0.0
+        self._samples: deque[tuple[float, float]] = deque()
+        self._running_sum: float = 0.0
 
-    def __call__(self, _, odom_msg: Odometry) -> float:
+    def __call__(
+        self,
+        _node: Node | None,
+        odom_msg: Odometry,
+    ) -> float:
+        """
+        Add an odometry sample and return the current rolling mean.
+
+        Parameters
+        ----------
+        _node : Node or None
+            ROS node supplied by the monitor interface; unused by this monitor.
+        odom_msg : Odometry
+            Timestamped odometry message containing planar velocity.
+
+        Returns
+        -------
+        float
+            Mean planar speed for samples inside the configured time window.
+
+        """
         # Convert message timestamp to float seconds
         ts = odom_msg.header.stamp.sec + odom_msg.header.stamp.nanosec * 1e-9
 
-        # Compute instantaneous speed with the same small-value clamp as calc_linear_velocity
+        # Use the same small-value clamp as calc_linear_velocity.
         vx = 0.0 if abs(odom_msg.twist.twist.linear.x) < self.threshold \
             else odom_msg.twist.twist.linear.x
         vy = 0.0 if abs(odom_msg.twist.twist.linear.y) < self.threshold \

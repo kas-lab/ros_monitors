@@ -51,4 +51,6 @@ RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install \
     && echo 'source ~/ros_monitors_ws/install/setup.bash' >> ~/.bashrc"]
 
+RUN pip3 install flake8==4.0.1
+
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
