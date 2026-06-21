@@ -31,7 +31,7 @@ class MinimalMonitor(Node):
         self.monitor = MonitorFactory()
 
     def listener_callback(self, msg):
-        self.get_logger().info(str(self.monitor["calc_linear_velocity"](self, msg)))
+        self.get_logger().info(str(self.monitor['calc_linear_velocity'](self, msg)))
 
 
 def main(args=None):
