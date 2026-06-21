@@ -58,9 +58,29 @@ class StableCostmap(GlobalCostmapChange):
 
     """
 
-    def __init__(self, significance_threshold=50, time_frame=5):
-        self.time_stamp = None
-        self.time_frame = Duration(seconds=time_frame)
+    def __init__(
+        self,
+        significance_threshold: int = 50,
+        time_frame: float = 5.0,
+    ) -> None:
+        """Initialize the stable-costmap monitor.
+
+        Parameters
+        ----------
+        significance_threshold : int, optional
+            Minimum absolute cell-value difference considered significant.
+        time_frame : float, optional
+            Required stability interval in seconds.
+
+        Returns
+        -------
+        None
+            The constructor initializes the monitor state.
+        """
+        self.time_stamp: Time | None = None
+        self.time_frame = Duration(
+            nanoseconds=int(time_frame * 1_000_000_000)
+        )
         super().__init__(significance_threshold)
 
     def __call__(self, node, grid_msg: OccupancyGrid) -> bool:
