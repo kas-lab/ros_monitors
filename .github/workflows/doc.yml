@@ -15,6 +15,12 @@ jobs:
     container: ubuntu:22.04
     steps:
       - uses: actions/checkout@v4
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 2502254
+          private-key: ${{ secrets.AC_KASLAB_PRIVATE_REPOS_KEY }}
+          owner: kas-lab
       - uses: ros-tooling/setup-ros@0.7.19
         with:
           required-ros-distributions: humble
@@ -27,6 +33,7 @@ jobs:
             ros_monitors_samples
           target-ros2-distro: humble
           skip-tests: true
+          import-token: ${{ steps.app-token.outputs.token }}
       - name: Install Sphinx dependencies
         run: pip install -r docs/requirements.txt
       - name: Sphinx build
