@@ -40,3 +40,7 @@ __pycache__/
 
 # debug information files
 *.dwo
+
+# Sphinx generated output
+docs/build/
+docs/source/_autosummary/
