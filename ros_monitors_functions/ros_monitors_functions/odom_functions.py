@@ -32,8 +32,8 @@ def calc_linear_velocity(
     """
     Calculate planar linear speed from an odometry message.
 
-    Components below ``tolerance`` are set to zero on the supplied message
-    before the Euclidean speed is calculated.
+    Components whose absolute values are below ``tolerance`` are set to zero on
+    the supplied message before the Euclidean speed is calculated.
 
     Parameters
     ----------
@@ -42,7 +42,7 @@ def calc_linear_velocity(
     odom_msg : Odometry
         Message containing the X and Y linear velocity components.
     tolerance : float, optional
-        Component values below this threshold are treated as zero.
+        Component magnitudes below this threshold are treated as zero.
 
     Returns
     -------
@@ -59,9 +59,9 @@ def calc_linear_velocity(
 
     """
     # if linear x is super small, replace with 0.0
-    if odom_msg.twist.twist.linear.x < tolerance:
+    if abs(odom_msg.twist.twist.linear.x) < tolerance:
         odom_msg.twist.twist.linear.x = 0.0
-    if odom_msg.twist.twist.linear.y < tolerance:
+    if abs(odom_msg.twist.twist.linear.y) < tolerance:
         odom_msg.twist.twist.linear.y = 0.0
     return math.hypot(abs(odom_msg.twist.twist.linear.x),
                       abs(odom_msg.twist.twist.linear.y))
