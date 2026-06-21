@@ -21,6 +21,8 @@
 
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
+  <depend>nav_msgs</depend>
+
 
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>tf2_ros_py</exec_depend>
