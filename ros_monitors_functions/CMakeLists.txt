@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 3.8)
+project(ros_monitors_functions)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  find_package(ament_lint_auto REQUIRED)
+
+  ament_lint_auto_find_test_dependencies()
+
+  ament_add_pytest_test(
+    test_nearest_scan
+    test/test_nearest_scan.py
+  )
+
+  ament_add_pytest_test(
+    test_monitor_functions
+    test/test_monitor_functions.py
+  )
+
+  # ament_add_pytest_test(
+  #   test_odom_functions
+  #   test/test_odom_functions.py
+  # )
+endif()
+
+ament_python_install_package(${PROJECT_NAME})
+
+ament_package()
