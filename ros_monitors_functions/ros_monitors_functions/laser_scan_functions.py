@@ -34,13 +34,14 @@ import tf_transformations
 def get_nearest_laser_scan_ratio(
     _node: Node | None,
     msg: LaserScan,
+    laser_min: float = 0.28,
 ) -> float:
     """
     Return the normalized distance to the nearest valid laser hit.
 
-    Readings at or below 0.28 meters are ignored to avoid detecting the robot
-    body. The result is normalized between that lower bound and the sensor's
-    maximum range.
+    Readings at or below the configured minimum distance are ignored. The
+    result is normalized between that lower bound and the sensor's maximum
+    range.
 
     Parameters
     ----------
@@ -48,6 +49,9 @@ def get_nearest_laser_scan_ratio(
         ROS node supplied by the monitor interface; unused by this monitor.
     msg : LaserScan
         Laser scan containing range limits and distance readings.
+    laser_min : float, optional
+        Minimum accepted distance in meters. Defaults to ``0.28`` to avoid
+        detecting the MIRTE robot's body.
 
     Returns
     -------
@@ -63,14 +67,11 @@ def get_nearest_laser_scan_ratio(
     0.5
 
     """
-    laser_min = msg.range_min
     laser_max = msg.range_max
 
     # Initialize nearest_object to a value greater than laser_max
     nearest_object = laser_max * 2
 
-    # MIRTE sees its own body, so enforce a suitable minimum distance.
-    laser_min = 0.28
     # Iterate through the laser ranges to find the nearest object
     for laser_dist in msg.ranges:
         if laser_min < laser_dist < laser_max:
