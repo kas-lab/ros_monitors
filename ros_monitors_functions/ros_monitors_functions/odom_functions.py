@@ -15,7 +15,28 @@ import math
 from collections import deque
 from ros_monitors_functions.utils import register_monitor
 from nav_msgs.msg import Odometry
+import rclpy
+import numpy as np
+from ros_monitors_functions.utils import _get_tf_buffer_for_node
+from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
+from rclpy.duration import Duration
 
+def quat_to_rotmat(q):
+    """Convert geometry_msgs/Quaternion to a 3x3 rotation matrix."""
+    x, y, z, w = q.x, q.y, q.z, q.w
+    n = x * x + y * y + z * z + w * w
+    if n < 1e-9:
+        return np.eye(3)
+    s = 2.0 / n
+    X, Y, Z = x * s, y * s, z * s
+    wx, wy, wz = w * X, w * Y, w * Z
+    xx, xy, xz = x * X, x * Y, x * Z
+    yy, yz, zz = y * Y, y * Z, z * Z
+    return np.array([
+        [1.0 - (yy + zz), xy - wz, xz + wy],
+        [xy + wz, 1.0 - (xx + zz), yz - wx],
+        [xz - wy, yz + wx, 1.0 - (xx + yy)],
+    ])
 
 @register_monitor("calc_linear_velocity")
 def calc_linear_velocity(_, odom_msg: Odometry, tolerance=0.09) -> float:
@@ -27,6 +48,51 @@ def calc_linear_velocity(_, odom_msg: Odometry, tolerance=0.09) -> float:
     return math.hypot(abs(odom_msg.twist.twist.linear.x),
                       abs(odom_msg.twist.twist.linear.y))
 
+
+@register_monitor("orientation_matches_motion")
+def orientation_matches_motion(node, odom_msg: Odometry, base_frame, other_frame, min_speed=0.03, angle_threshold_deg=30.0):
+    angle_threshold = math.radians(angle_threshold_deg)
+    
+    vx = odom_msg.twist.twist.linear.x
+    vy = odom_msg.twist.twist.linear.y
+    speed = math.hypot(vx, vy)
+
+    if speed < min_speed:
+        node.get_logger().info("Not moving ", throttle_duration_sec=3)
+        return None
+
+    # msg.twist is expressed in msg.child_frame_id, which should be base_frame
+    motion_dir_base = np.array([vx, vy, 0.0])
+    motion_dir_base /= np.linalg.norm(motion_dir_base)
+
+    tf_buffer = _get_tf_buffer_for_node(node)
+
+    try:
+        tf = tf_buffer.lookup_transform(
+            base_frame, other_frame, rclpy.time.Time(), #use msg time with bigger buffer later
+            timeout=Duration(seconds=5.0))
+    except (LookupException, ConnectivityException, ExtrapolationException) as e:
+        node.get_logger().warn(f'tf lookup failed: {e}')
+        return
+
+    R = quat_to_rotmat(tf.transform.rotation)
+    axis_index = {'x': 0, 'y': 1, 'z': 2}['x']
+    camera_forward_base = R[:, axis_index]  # that axis expressed in base_frame
+
+    # Compare heading only (ignore camera pitch/roll from arm tilt)
+    cam_planar = np.array([camera_forward_base[0], camera_forward_base[1], 0.0])
+    norm = np.linalg.norm(cam_planar)
+    if norm < 1e-6:
+        node.get_logger().warn('Camera is pointing straight up/down; no planar heading.')
+        return
+    cam_planar /= norm
+
+    cos_angle = np.clip(np.dot(cam_planar, motion_dir_base), -1.0, 1.0)
+    angle = math.acos(cos_angle)
+
+    facing_motion = angle <= angle_threshold
+
+    return facing_motion
 
 @register_monitor("MeanLinearVelocity")
 class MeanLinearVelocity:
