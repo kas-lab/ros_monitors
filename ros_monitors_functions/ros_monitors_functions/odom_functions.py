@@ -94,6 +94,47 @@ def orientation_matches_motion(node, odom_msg: Odometry, base_frame, other_frame
 
     return facing_motion
 
+@register_monitor("orientation_vs_motion")
+def orientation_vs_motion(node, odom_msg: Odometry, base_frame, other_frame, min_speed=0.03):
+    vx = odom_msg.twist.twist.linear.x
+    vy = odom_msg.twist.twist.linear.y
+    speed = math.hypot(vx, vy)
+
+    if speed < min_speed:
+        node.get_logger().info("Not moving ", throttle_duration_sec=3)
+        return None
+
+    # msg.twist is expressed in msg.child_frame_id, which should be base_frame
+    motion_dir_base = np.array([vx, vy, 0.0])
+    motion_dir_base /= np.linalg.norm(motion_dir_base)
+
+    tf_buffer = _get_tf_buffer_for_node(node)
+
+    try:
+        tf = tf_buffer.lookup_transform(
+            base_frame, other_frame, rclpy.time.Time(), #use msg time with bigger buffer later
+            timeout=Duration(seconds=5.0))
+    except (LookupException, ConnectivityException, ExtrapolationException) as e:
+        node.get_logger().warn(f'tf lookup failed: {e}')
+        return
+
+    R = quat_to_rotmat(tf.transform.rotation)
+    axis_index = {'x': 0, 'y': 1, 'z': 2}['x']
+    camera_forward_base = R[:, axis_index]  # that axis expressed in base_frame
+
+    # Compare heading only (ignore camera pitch/roll from arm tilt)
+    cam_planar = np.array([camera_forward_base[0], camera_forward_base[1], 0.0])
+    norm = np.linalg.norm(cam_planar)
+    if norm < 1e-6:
+        node.get_logger().warn('Camera is pointing straight up/down; no planar heading.')
+        return
+    cam_planar /= norm
+
+    cos_angle = np.clip(np.dot(cam_planar, motion_dir_base), -1.0, 1.0)
+    angle = math.acos(cos_angle)
+
+    return angle
+
 @register_monitor("MeanLinearVelocity")
 class MeanLinearVelocity:
     """

@@ -6,6 +6,7 @@ from .monitor_functions import *
 from .global_costmap_functions import *
 from .path_functions import *
 from .system_monitors_functions import *
+from .composite_functions import *
 
 
 class MonitorFactory(UserDict):
