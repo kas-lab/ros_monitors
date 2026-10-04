@@ -1,0 +1,35 @@
+name: test
+on:
+  schedule:
+    - cron: '30 20 * * *'
+  push:
+    branches: [ "main", "dev" ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+
+jobs:
+  test:
+    name: build and test
+    runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-jammy-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 2502254
+          private-key: ${{ secrets.AC_KASLAB_PRIVATE_REPOS_KEY }}
+          owner: kas-lab
+      - uses: ros-tooling/setup-ros@0.7.19
+        with:
+          required-ros-distributions: humble
+      - uses: ros-tooling/action-ros-ci@0.4.8
+        with:
+          package-name: |
+            ros_monitors
+            ros_monitors_functions
+            ros_monitors_samples
+          target-ros2-distro: humble
+          skip-tests: false
+          import-token: ${{ steps.app-token.outputs.token }}

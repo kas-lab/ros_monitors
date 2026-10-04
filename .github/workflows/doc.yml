@@ -1,0 +1,51 @@
+name: documentation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+      - uses: actions/checkout@v4
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 2502254
+          private-key: ${{ secrets.AC_KASLAB_PRIVATE_REPOS_KEY }}
+          owner: kas-lab
+      - uses: ros-tooling/setup-ros@0.7.19
+        with:
+          required-ros-distributions: humble
+      - uses: ros-tooling/action-ros-ci@0.4.8
+        id: action_ros_ci_step
+        with:
+          package-name: |
+            ros_monitors
+            ros_monitors_functions
+            ros_monitors_samples
+          target-ros2-distro: humble
+          skip-tests: true
+          import-token: ${{ steps.app-token.outputs.token }}
+      - name: Install Sphinx dependencies
+        run: pip install -r docs/requirements.txt
+      - name: Sphinx build
+        shell: bash
+        run: |
+          source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash
+          sphinx-build -W --keep-going docs/source docs/build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/
+          force_orphan: true
