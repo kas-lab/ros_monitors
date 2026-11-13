@@ -1,0 +1,18 @@
+﻿ros\_monitors\_samples.example\_monitor
+=======================================
+
+.. automodule:: ros_monitors_samples.example_monitor
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MinimalMonitor
+   

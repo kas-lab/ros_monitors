@@ -1,0 +1,18 @@
+﻿ros\_monitors\_functions.odom\_functions
+========================================
+
+.. automodule:: ros_monitors_functions.odom_functions
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calc_linear_velocity
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MeanLinearVelocity
+   

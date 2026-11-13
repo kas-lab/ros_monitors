@@ -1,0 +1,14 @@
+﻿ros\_monitors\_functions.monitor\_functions
+===========================================
+
+.. automodule:: ros_monitors_functions.monitor_functions
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_data_array_from_diagnostic_array
+      get_data_field
+      get_data_from_diagnostic_array
+   

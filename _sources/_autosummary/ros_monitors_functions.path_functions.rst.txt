@@ -1,0 +1,12 @@
+﻿ros\_monitors\_functions.path\_functions
+========================================
+
+.. automodule:: ros_monitors_functions.path_functions
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      average_curvature
+   

@@ -1,0 +1,14 @@
+﻿ros\_monitors\_functions.laser\_scan\_functions
+===============================================
+
+.. automodule:: ros_monitors_functions.laser_scan_functions
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_nearest_laser_scan_distance
+      get_nearest_laser_scan_ratio
+      get_nearest_scan_distance_in_base
+   

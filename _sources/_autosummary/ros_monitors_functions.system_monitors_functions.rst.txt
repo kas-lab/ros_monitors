@@ -1,0 +1,13 @@
+﻿ros\_monitors\_functions.system\_monitors\_functions
+====================================================
+
+.. automodule:: ros_monitors_functions.system_monitors_functions
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AverageCPULoad
+      AverageCPULoad1min
+   
